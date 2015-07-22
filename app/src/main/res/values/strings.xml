@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">BluetoothTest</string>
+
+    <string name="new_devices">New Device List:</string>
+    <string name="paired_devices">Paired Devices List:</string>
+    <string name="scanning">Scan Device</string>
+
+    <string name="action_settings">Settings</string>
+</resources>
