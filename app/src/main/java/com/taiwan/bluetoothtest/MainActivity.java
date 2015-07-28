@@ -37,9 +37,10 @@ public class MainActivity extends ActionBarActivity {
     private BluetoothAdapter bluetoothAdapter;
     private ListView pairedListView;
     private ListView newDevicesListView;
-    private final  UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // ¤@©w­n¬O³o²Õ
-    private static BluetoothSocket mBluetoothSocket = null; // ¥Î¨Ó³sµ²ÂÅªÞ¸Ë¸m¡B¥H¤Î¶Ç°e«ü¥O
-
+    //SPP use to sent data
+    private final  UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    //To use to connection two device
+    private static BluetoothSocket mBluetoothSocket = null;
     private static OutputStream mOutputStream = null;
 
 
@@ -54,21 +55,21 @@ public class MainActivity extends ActionBarActivity {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         if(!bluetoothAdapter.isEnabled()){
-            //¼u¥X¹ï¸Ü¤è¶ô´£¥Ü¨Ï¥ÎªÌ¬O«á¥´¶}
+            //ï¿½uï¿½Xï¿½ï¿½Ü¤ï¿½ï¿½ï¿½ï¿½ï¿½Ü¨Ï¥ÎªÌ¬Oï¿½á¥´ï¿½}
             Intent enabler = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enabler, REQUEST_ENABLE);
-            //¤£°µ´£¥Ü¡A±j¦æ¥´¶}
+            //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü¡Aï¿½jï¿½æ¥´ï¿½}
             //mAdapter.enable();
             Toast.makeText(getApplicationContext(),"Bluetooth open now.",Toast.LENGTH_LONG).show();
         }else{
             Toast.makeText(getApplicationContext(),"Bluetooth is opened.",Toast.LENGTH_LONG).show();
         }
-
-        // µù¥U¤@­ÓBroadcastReceiver¡A¥Î¨Ó±µ¦¬·j´M¨ì¸Ë¸mªº®ø®§
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        registerReceiver(mReceiver, filter);
-
-        filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        IntentFilter filter=new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+        filter.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
+        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        // ï¿½ï¿½Uï¿½@ï¿½ï¿½BroadcastReceiverï¿½Aï¿½Î¨Ó±ï¿½ï¿½ï¿½ï¿½jï¿½Mï¿½ï¿½Ë¸mï¿½ï¿½ï¿½z
         registerReceiver(mReceiver, filter);
 
         // Initialize the button to perform device discovery
@@ -76,8 +77,6 @@ public class MainActivity extends ActionBarActivity {
         scanButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 doDiscovery();
-
-//                v.setVisibility(View.GONE);
             }
         });
 
@@ -119,7 +118,7 @@ public class MainActivity extends ActionBarActivity {
 
         if (pairedDevices.size() > 0) {
             for (BluetoothDevice device : pairedDevices) {
-                sendMessage(device);
+                //sendMessage(device);
                 pairedDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
             }
         } else {
@@ -135,7 +134,13 @@ public class MainActivity extends ActionBarActivity {
             // Get the device MAC address, which is the last 17 chars in the View
             String info = ((TextView) v).getText().toString();
             String address = info.substring(info.length() - 17);
-            Toast.makeText(getApplicationContext(),"This device address: "+address,Toast.LENGTH_LONG).show();
+            BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
+            Toast.makeText(getApplicationContext(),"Connecting with unit: "+address,Toast.LENGTH_LONG).show();
+            connect(device);
+            doDiscovery();
+
+
+
             // Create the result Intent and include the MAC address
             //Intent intent = new Intent();
             //intent.putExtra(EXTRA_DEVICE_ADDRESS, address);
@@ -149,14 +154,14 @@ public class MainActivity extends ActionBarActivity {
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {//§ä¨ì³]³Æ
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {//ï¿½ï¿½ï¿½]ï¿½ï¿½
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
                     Log.d(TAG, "find device:" + device.getName() + device.getAddress());
                     mNewDevicesArrayAdapter.add(device.getName() + ":  " + device.getAddress());
-                    sendMessage(device);
+                    //sendMessage(device);
                 }
-            }else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {//·j¯Á§¹¦¨
+            }else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {//ï¿½jï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 setTitle("Discovery finish.");
                 Log.d(TAG, "find over");
                 setProgressBarIndeterminateVisibility(false);
@@ -168,28 +173,30 @@ public class MainActivity extends ActionBarActivity {
         }
     };
 
-    private void sendMessage(BluetoothDevice device){
-        if(device.getName().equals("Galaxy Tab4")){
-            try {
-                // ¤@¶i¨Ó¤@©w­n°±¤î·j´M
-                bluetoothAdapter.cancelDiscovery();
+    private void connect(BluetoothDevice device){
 
-                // ³sµ²¨ì¸Ó¸Ë¸m
-                mBluetoothSocket = device.createInsecureRfcommSocketToServiceRecord(MY_UUID);
-                mBluetoothSocket.connect();
+        final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+        try {
+            // ï¿½@ï¿½iï¿½Ó¤@ï¿½wï¿½nï¿½ï¿½ï¿½ï¿½jï¿½M
+            bluetoothAdapter.cancelDiscovery();
 
-                // ¨ú±ooutputstream
-                mOutputStream = mBluetoothSocket.getOutputStream();
+            // ï¿½sï¿½ï¿½ï¿½ï¿½Ó¸Ë¸m
+            mBluetoothSocket = device.createInsecureRfcommSocketToServiceRecord(SPP_UUID);
+            mBluetoothSocket.connect();
+            Log.d("BlueToothTestActivity", "å¼€å§‹è¿žæŽ¥...");
 
-                // °e¥X°T®§
-                String message = "hello";
-                mOutputStream.write(message.getBytes());
+            // ï¿½ï¿½ooutputstream
+            //mOutputStream = mBluetoothSocket.getOutputStream();
 
-            } catch (IOException e) {
+            // ï¿½eï¿½Xï¿½Tï¿½ï¿½
+            //String message = "hello";
+            //mOutputStream.write(message.getBytes());
 
-            }
+        } catch (IOException e) {
+
         }
     }
+
 
     @Override
     protected void onDestroy() {
