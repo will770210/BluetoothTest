@@ -19,8 +19,9 @@ package com.taiwan.bluetoothtest.common.activities;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 
-import com.example.android.common.logger.Log;
-import com.example.android.common.logger.LogWrapper;
+import com.taiwan.bluetoothtest.common.logger.Log;
+import com.taiwan.bluetoothtest.common.logger.LogWrapper;
+
 
 /**
  * Base launcher activity, to handle most of the common plumbing for samples.

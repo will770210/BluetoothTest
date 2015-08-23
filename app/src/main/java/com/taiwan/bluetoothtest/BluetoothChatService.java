@@ -106,7 +106,7 @@ public class BluetoothChatService {
      * session in listening (server) mode. Called by the Activity onResume()
      */
     public synchronized void start() {
-        Log.d(TAG, "start");
+        Log.d(TAG, "start................");
 
         // Cancel any thread attempting to make a connection
         if (mConnectThread != null) {
